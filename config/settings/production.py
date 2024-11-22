@@ -1,7 +1,20 @@
-from .base import os
+import os
+
+from . import base
+
+STATIC_URL = base.STATIC_URL
+STATICFILES_DIRS = base.STATICFILES_DIRS
+BASE_DIR = base.BASE_DIR
+INSTALLED_APPS = base.INSTALLED_APPS
+MIDDLEWARE = base.MIDDLEWARE
+TEMPLATES = base.TEMPLATES
+AUTH_PASSWORD_VALIDATORS = base.AUTH_PASSWORD_VALIDATORS
+ROOT_URLCONF = base.ROOT_URLCONF
+SECRET_KEY = base.SECRET_KEY
 
 # Включение режима безопасности
-DEBUG = False
+DEBUG = True
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 # Дополнительные настройки безопасности
 CSRF_COOKIE_SECURE = True
