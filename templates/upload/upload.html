@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Загрузка фото{% endblock %}
+
+{% block content %}
+    <div class="container d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="card p-4 shadow-sm" style="width: 100%; max-width: 400px;">
+            <h1 class="text-center mb-4">Загрузить фото</h1>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% if error %}
+                    <div class="alert alert-danger text-center">
+                        {{ error }}
+                    </div>
+                {% endif %}
+                <div class="mb-3">
+                    <label for="files" class="form-label">Выберите файлы:</label>
+                    <input type="file" name="files" multiple class="form-control" id="files">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Загрузить</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

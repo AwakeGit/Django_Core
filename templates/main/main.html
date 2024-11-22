@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1>Ваши документы</h1>
+
+        <div class="row">
+            {% for doc in page_obj %}
+                <div class="col-md-4">
+                    <div class="card mb-3">
+                        <img src="{{ doc.file.url }}" class="card-img-top" alt="Документ">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Документ ID: {{ doc.id }}</h5>
+                            <p>Размер: {{ doc.size }} КБ</p>
+
+                            <!-- Кнопки управления документом -->
+                            <div class="document-buttons">
+                                <!-- Кнопка для удаления файла -->
+                                <form method="post" action="{% url 'delete_file' doc.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">Удалить файл</button>
+                                </form>
+
+                                {% if not doc.payment_status %}
+                                    {% if doc.id in cart_docs_ids %}
+                                        <!-- Документ в корзине -->
+                                        <span class="badge bg-warning text-dark">В корзине</span>
+                                        <a href="{% url 'view_cart' %}" class="btn btn-primary">Перейти к оплате</a>
+
+                                        <!-- Кнопка для удаления из корзины -->
+                                        <form method="post" action="{% url 'remove_from_cart' doc.id %}"
+                                              style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-warning">Удалить из корзины</button>
+                                        </form>
+                                    {% else %}
+                                        <!-- Кнопка для добавления в корзину -->
+                                        <form method="post" action="{% url 'add_to_cart' doc.id %}"
+                                              style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-success">Добавить в корзину</button>
+                                        </form>
+                                    {% endif %}
+                                {% elif not doc.analysis_done %}
+                                    <!-- Кнопка для анализа -->
+                                    <form method="post" action="{% url 'analyze_file' doc.id %}"
+                                          style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-primary">Проанализировать</button>
+                                    </form>
+                                {% else %}
+                                    <!-- Кнопка для получения текста -->
+                                    <a href="{% url 'get_text' doc.id %}" class="btn btn-secondary">Получить текст</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+        </div>
+
+        <!-- Кнопка "Добавить фото" -->
+        <div class="text-center mt-3">
+            <a href="{% url 'upload_photos' %}" class="btn btn-success">Добавить фото</a>
+        </div>
+
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Предыдущая</span></li>
+                    {% endif %}
+
+                    <li class="page-item disabled"><span
+                            class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Следующая</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Текст документа{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Текст документа</h1>
+
+        <!-- Информация о документе -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Документ ID: {{ doc.id }}</h5>
+                <p>Размер: {{ doc.size }} КБ</p>
+            </div>
+        </div>
+
+        <!-- Текст документа -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Распознанный текст:</h5>
+                <pre style="white-space: pre-wrap; word-wrap: break-word;">{{ text }}</pre>
+            </div>
+        </div>
+
+        <!-- Кнопка возврата на главную -->
+        <div class="mt-4 text-center">
+            <a href="{% url 'main' %}" class="btn btn-primary">Вернуться на главную</a>
+        </div>
+    </div>
+{% endblock %}

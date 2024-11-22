@@ -6,6 +6,11 @@ from dotenv import load_dotenv
 # Загрузка переменных окружения из .env
 load_dotenv()
 
+# Настройки аутентификации
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
+LOGIN_URL = "/users/login/"
+
 # Указание BASE_DIR для всей структуры настроек
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -40,8 +45,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# Настройки URL
 ROOT_URLCONF = "config.urls"
 
+# Настройки шаблонов
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -53,11 +60,13 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.users.context_processors.current_url_name",
             ],
         },
     },
 ]
 
+# Настройки WSGI
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
@@ -92,9 +101,12 @@ USE_TZ = True
 
 # Статические файлы и медиа
 STATIC_URL = "/static/"
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Путь для статических файлов (на продакшн)
 STATICFILES_DIRS = [BASE_DIR / "static"]
