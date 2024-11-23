@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:13
-    container_name: postgres
+    container_name: postgres_django
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -16,8 +16,8 @@ services:
       - django-network
 
   pgadmin:
-    image: dpage/pgadmin4:6.17
-    container_name: pgadmin
+    image: dpage/pgadmin4:8.13
+    container_name: pgadmin_django
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -31,8 +31,12 @@ services:
   django:
     build:
       context: .
-    container_name: django
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    container_name: django_core
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py migrate &&
+             python manage.py initialize_prices &&
+             python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
     ports:
@@ -41,6 +45,7 @@ services:
       - .env
     depends_on:
       - db
+      - pgadmin
     networks:
       - django-network
 

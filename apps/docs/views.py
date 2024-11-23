@@ -9,13 +9,19 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.cart.models import Cart
 from config import settings
 
-from .models import Docs
+from .models import Docs, UserToDocs
 
 
 @login_required
 def main_page(request):
-    # Получаем все документы текущего пользователя
-    documents = Docs.objects.filter(user=request.user).order_by("-id")
+    # Получаем все документы текущего пользователя через UserToDocs
+    user_docs = (
+        UserToDocs.objects.filter(user=request.user)
+        .select_related("doc")
+        .order_by("-id")
+    )
+    documents = [user_doc.doc for user_doc in user_docs]
+
     cart_items = Cart.objects.filter(user=request.user)
     cart_docs_ids = cart_items.values_list("docs_id", flat=True)
 
@@ -35,7 +41,6 @@ def main_page(request):
 
 @login_required
 def upload_photos(request):
-    print("upload_photos")
     if request.method == "POST":
         files = request.FILES.getlist("files")
         error = None
@@ -47,9 +52,11 @@ def upload_photos(request):
                 error = "Файл слишком большой."
             else:
                 # Сохранение файла
-                Docs.objects.create(
+                doc = Docs.objects.create(
                     user=request.user, file=file, size=file.size // 1024
                 )
+                # Создание записи в UserToDocs
+                UserToDocs.objects.create(user=request.user, doc=doc)
         if error:
             return render(request, "upload/upload.html", {"error": error})
         return redirect("main")
@@ -133,6 +140,9 @@ def delete_file(request, doc_id):
         file_path = os.path.join(settings.MEDIA_ROOT, doc.file.name)
         if os.path.exists(file_path):
             os.remove(file_path)
+
+        # Удаляем запись из таблицы UserToDocs
+        UserToDocs.objects.filter(doc=doc).delete()
 
         # Удаляем запись из базы данных
         doc.delete()

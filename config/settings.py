@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Пользовательские приложения
+    "config",
     "apps.cart.apps.CartConfig",
     "apps.docs.apps.DocsConfig",
     "apps.users.apps.UsersConfig",
