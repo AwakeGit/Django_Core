@@ -150,11 +150,13 @@ def add_to_cart(request, doc_id):
             messages.warning(request, "Этот документ уже оплачен.")
             return redirect("main")
 
-        Cart.objects.get_or_create(
+        cart_item, created = Cart.objects.get_or_create(
             user=request.user,
             docs=doc,
-            defaults={"order_price": doc.size * 0.1},  # Пример расчета цены
         )
+
+        if created:
+            cart_item.calculate_price()
 
         messages.success(request, "Документ добавлен в корзину.")
         return redirect("main")

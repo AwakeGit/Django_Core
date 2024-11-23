@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-from apps.docs.models import Docs, Price
+from apps.docs.models import Docs
 
 
 class Cart(models.Model):
@@ -16,12 +16,27 @@ class Cart(models.Model):
 
     def calculate_price(self):
         """Вычисляет цену на основе размера документа и типа."""
-        price = Price.objects.filter(
-            file_type=self.docs.file.name.split(".")[-1]
-        ).first()
-        if price:
-            self.order_price = self.docs.size * price.price
-            self.save()
+        # Временный словарь с ценами
+        PRICE_MAP = {
+            "jpg": 0.05,
+            "jpeg": 0.05,
+            "png": 0.07,
+            "pdf": 0.10,
+        }
+
+        # Получаем расширение файла
+        file_extension = self.docs.file.name.split(".")[-1].lower()
+
+        # Получаем цену из временного словаря
+        price_per_kb = PRICE_MAP.get(file_extension)
+
+        if price_per_kb is None:
+            # Если расширение не поддерживается
+            raise ValueError(f"Цена для типа файла '{file_extension}' не задана.")
+
+        # Рассчитываем цену
+        self.order_price = self.docs.size * price_per_kb
+        self.save()
 
     def __str__(self):
         return f"Cart {self.id} - User {self.user.username} - Price {self.order_price} руб."
