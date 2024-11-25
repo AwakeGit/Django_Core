@@ -141,27 +141,29 @@ LOGGING = {
     },
 }
 
+# MESSAGE_STORAGE = "django.contrib.messages.storage.fallback.FallbackStorage"
+
 # Специфические настройки для окружений
-if ENVIRONMENT == "production":
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in [
-        "true",
-        "1",
-        "yes",
-    ]
-    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))  # 1 год
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-
-    ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
-
-elif ENVIRONMENT == "development":
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-elif ENVIRONMENT == "testing":
-    DATABASES["default"]["NAME"] = (
-        ":memory:" if USE_SQLITE else DATABASES["default"]["NAME"] + "_test"
-    )
-    DEBUG = False
+# if ENVIRONMENT == "production":
+#     CSRF_COOKIE_SECURE = False
+#     SESSION_COOKIE_SECURE = True
+#     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in [
+#         "true",
+#         "1",
+#         "yes",
+#     ]
+#     SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))  # 1 год
+#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+#     SECURE_HSTS_PRELOAD = True
+#     SECURE_CONTENT_TYPE_NOSNIFF = True
+#
+#     ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
+#
+# elif ENVIRONMENT == "development":
+#     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+#
+# elif ENVIRONMENT == "testing":
+#     DATABASES["default"]["NAME"] = (
+#         ":memory:" if USE_SQLITE else DATABASES["default"]["NAME"] + "_test"
+#     )
+#     DEBUG = False

@@ -1,32 +1,32 @@
 version: '3.8'
 
 services:
-  db:
+  db_django:
     image: postgres:13
     container_name: postgres_django
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME_DJANGO}
+      POSTGRES_USER: ${DB_USER_DJANGO}
+      POSTGRES_PASSWORD: ${DB_PASSWORD_DJANGO}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_django:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
-      - django-network
+      - app-network
 
   pgadmin:
     image: dpage/pgadmin4:8.13
-    container_name: pgadmin_django
+    container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
     ports:
       - "8080:80"
     depends_on:
-      - db
+      - db_django
     networks:
-      - django-network
+      - app-network
 
   django:
     build:
@@ -40,17 +40,17 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "8001:8000"
     env_file:
       - .env
     depends_on:
-      - db
-      - pgadmin
+      - db_django
     networks:
-      - django-network
+      - app-network
 
 networks:
-  django-network:
+  app-network:
+    external: true
 
 volumes:
-  postgres_data:
+  postgres_data_django:

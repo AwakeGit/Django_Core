@@ -1,15 +1,21 @@
 import os
 
+import requests
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from dotenv.main import load_dotenv
 
 from apps.cart.models import Cart
 from config import settings
 
 from .models import Docs, UserToDocs
+
+load_dotenv()
+
+FASTAPI_URL = os.getenv("FASTAPI_URL", "http://127.0.0.1:8000")
 
 
 @login_required
@@ -51,15 +57,25 @@ def upload_photos(request):
             elif file.size > 5 * 1024 * 1024:  # 5MB
                 error = "Файл слишком большой."
             else:
-                # Сохранение файла
-                doc = Docs.objects.create(
-                    user=request.user, file=file, size=file.size // 1024
-                )
-                # Создание записи в UserToDocs
-                UserToDocs.objects.create(user=request.user, doc=doc)
+                url = f"{FASTAPI_URL}/upload_doc"
+                try:
+                    with file.open("rb") as f:
+                        response = requests.post(url, files={"file": f})
+                        if response.status_code == 200:
+
+                            # Сохранение файла
+                            doc = Docs.objects.create(
+                                user=request.user, file=file, size=file.size // 1024
+                            )
+                            # Создание записи в UserToDocs
+                            UserToDocs.objects.create(user=request.user, doc=doc)
+                except requests.exceptions.RequestException:
+                    messages.warning(request, "Произошла ошибка при загрузке файла.")
+
         if error:
             return render(request, "upload/upload.html", {"error": error})
         return redirect("main")
+
     return render(request, "upload/upload.html")
 
 
@@ -76,9 +92,28 @@ def analyze_file(request, doc_id):
     # Обработка POST-запроса
     if request.method == "POST":
         if not doc.analysis_done:
-            doc.analysis_done = True
-            doc.save()
-            messages.success(request, f"Документ {doc.id} успешно проанализирован.")
+            # Отправка документа на анализ через FastAPI
+            url = f"{FASTAPI_URL}/doc_analyse"
+            params = {"document_id": doc_id}
+            try:
+                response = requests.post(url, params=params)
+                if response.status_code == 200:
+                    # Помечаем документ как проанализированный
+                    doc.analysis_done = True
+                    doc.save()
+                    messages.success(
+                        request, f"Документ {doc.id} успешно проанализирован."
+                    )
+                else:
+                    error_message = response.json().get(
+                        "message", "Неизвестная ошибка."
+                    )
+                    messages.error(
+                        request,
+                        f"Ошибка отправки документа на анализ через FastAPI: {error_message}",
+                    )
+            except requests.RequestException as e:
+                messages.error(request, f"Ошибка соединения с FastAPI: {e}")
         else:
             messages.info(request, f"Документ {doc.id} уже был проанализирован.")
         return redirect("main")
@@ -102,27 +137,47 @@ def confirm_payment(request, doc_id):
 
 @login_required
 def confirm_all_payments(request):
-    if request.method == "POST":
-        cart_items = Cart.objects.filter(user=request.user, payment=False)
+    if request.method != "POST":
+        return HttpResponseNotAllowed(
+            ["POST"]
+        )  # Возвращает 405 для методов, кроме POST
 
-        # Помечаем все элементы корзины как оплаченные и обновляем статус документов
-        for item in cart_items:
-            item.payment = True
-            item.save()
+    cart_items = Cart.objects.filter(user=request.user, payment=False)
 
-            # Обновляем статус оплаты документа
-            doc = item.docs
-            doc.payment_status = True
-            doc.save()
+    # Помечаем все элементы корзины как оплаченные и обновляем статус документов
+    for item in cart_items:
+        item.payment = True
+        item.save()
 
-        messages.success(request, "Оплата успешно выполнена!")
-        return redirect("view_cart")
+        # Обновляем статус оплаты документа
+        doc = item.docs
+        doc.payment_status = True
+        doc.save()
+
+    messages.success(request, "Оплата успешно выполнена!")
+    return redirect("view_cart")
 
 
 @login_required
 def get_text(request, doc_id):
+    # Получаем объект документа
     doc = get_object_or_404(Docs, id=doc_id, user=request.user)
-    text = doc.text if doc.text else "Текст недоступен или еще не проанализирован."
+
+    # URL FastAPI сервиса
+    url = f"{FASTAPI_URL}/get_text/{doc_id}"
+
+    # Выполняем запрос к FastAPI
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        text = data.get("text", "Текст недоступен.")
+        # Сохраняем текст в базе данных
+        doc.text = text
+        doc.save()
+    else:
+        text = "Не удалось получить текст из FastAPI."
+
+    # Передаем текст в шаблон
     return render(request, "docs/get_text.html", {"doc": doc, "text": text})
 
 
@@ -136,19 +191,24 @@ def delete_file(request, doc_id):
         if request.user != doc.user and not request.user.is_staff:
             return HttpResponseForbidden("Вы не можете удалить этот файл.")
 
-        # Удаляем файл из локальной файловой системы
-        file_path = os.path.join(settings.MEDIA_ROOT, doc.file.name)
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        # Подключаемся к FastAPI
+        url = f"{FASTAPI_URL}/delete_doc"
+        response = requests.delete(url, params={"document_id": doc_id})
+        if response.status_code == 200:
 
-        # Удаляем запись из таблицы UserToDocs
-        UserToDocs.objects.filter(doc=doc).delete()
+            # Удаляем файл из локальной файловой системы
+            file_path = os.path.join(settings.MEDIA_ROOT, doc.file.name)
+            if os.path.exists(file_path):
+                os.remove(file_path)
 
-        # Удаляем запись из базы данных
-        doc.delete()
+            # Удаляем запись из таблицы UserToDocs
+            UserToDocs.objects.filter(doc=doc).delete()
+
+            # Удаляем запись из базы данных
+            doc.delete()
 
         # Перенаправляем на главную страницу
-        return redirect("main")
+    return redirect("main")
 
 
 @login_required
