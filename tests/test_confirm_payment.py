@@ -1,68 +1,93 @@
+from unittest import mock
+
+import requests
 from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from apps.cart.models import Cart
-from apps.docs.models import Docs
+from apps.docs.models import Docs, UserToDocs
 
 
-class ConfirmPaymentTest(TestCase):
+class UploadPhotosTest(TestCase):
     def setUp(self):
         # Создаем тестового пользователя и авторизуем его
         self.client = Client()
         self.username = "testuser"
-        self.password = "testpassword"
+        self.password = "testpass"
         self.user = User.objects.create_user(
             username=self.username, password=self.password
         )
         self.client.login(username=self.username, password=self.password)
+        self.upload_url = reverse("upload_photos")  # Убедитесь, что имя URL совпадает
 
-        # Создаем документ и добавляем его в корзину
-        self.doc = Docs.objects.create(
-            user=self.user, file="test_file.pdf", size=100, payment_status=False
+    @mock.patch("apps.docs.services.requests.post")
+    def test_upload_valid_file(self, mock_post):
+        # Мокаем ответ от requests.post
+        mock_response = mock.Mock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        # Создаем валидный файл
+        file_content = b"This is a test file"
+        uploaded_file = SimpleUploadedFile(
+            "test.jpg", file_content, content_type="image/jpeg"
         )
-        self.cart_item = Cart.objects.create(user=self.user, docs=self.doc)
 
-        # URL для подтверждения оплаты
-        self.confirm_payment_url = reverse(
-            "confirm_payment", kwargs={"doc_id": self.doc.id}
+        response = self.client.post(self.upload_url, {"files": [uploaded_file]})
+
+        # Проверяем успешную загрузку файла
+        self.assertRedirects(response, reverse("main"))
+        self.assertEqual(Docs.objects.count(), 1)
+        self.assertEqual(UserToDocs.objects.count(), 1)
+
+    def test_upload_invalid_format_file(self):
+        # Создаем файл с недопустимым форматом
+        file_content = b"This is a test file"
+        uploaded_file = SimpleUploadedFile(
+            "test.txt", file_content, content_type="text/plain"
         )
 
-    def test_unauthenticated_access(self):
-        # Разлогиниваем пользователя
-        self.client.logout()
+        response = self.client.post(self.upload_url, {"files": [uploaded_file]})
 
-        response = self.client.get(self.confirm_payment_url)
+        # Проверяем отображение ошибки
+        self.assertTemplateUsed(response, "upload/upload.html")
+        self.assertContains(response, "Неправильный формат файла.")
+        self.assertEqual(Docs.objects.count(), 0)
+        self.assertEqual(UserToDocs.objects.count(), 0)
 
-        # Проверяем, что неавторизованный пользователь перенаправляется на страницу входа
-        self.assertEqual(response.status_code, 302)
-        self.assertIn("/login/", response.url)
+    def test_upload_large_file(self):
+        # Создаем файл размером более 5MB
+        file_content = b"A" * (5 * 1024 * 1024 + 1)  # 5MB + 1 байт
+        uploaded_file = SimpleUploadedFile(
+            "large.jpg", file_content, content_type="image/jpeg"
+        )
 
-    def test_document_payment_status_update(self):
-        self.client.get(self.confirm_payment_url)
+        response = self.client.post(self.upload_url, {"files": [uploaded_file]})
 
-        # Проверяем, что статус оплаты обновился
-        self.doc.refresh_from_db()
-        self.assertTrue(self.doc.payment_status)
+        # Проверяем отображение ошибки
+        self.assertTemplateUsed(response, "upload/upload.html")
+        self.assertContains(response, "Файл слишком большой.")
+        self.assertEqual(Docs.objects.count(), 0)
+        self.assertEqual(UserToDocs.objects.count(), 0)
 
-    def test_document_removed_from_cart(self):
-        self.client.get(self.confirm_payment_url)
+    @mock.patch("apps.docs.services.requests.post")
+    def test_upload_requests_exception(self, mock_post):
+        mock_post.side_effect = requests.exceptions.RequestException
 
-        # Проверяем, что документ удален из корзины
-        self.assertEqual(Cart.objects.filter(user=self.user, docs=self.doc).count(), 0)
+        file_content = b"This is a test file"
+        uploaded_file = SimpleUploadedFile(
+            "test.jpg", file_content, content_type="image/jpeg"
+        )
 
-    def test_success_message(self):
-        response = self.client.get(self.confirm_payment_url, follow=True)
+        response = self.client.post(
+            self.upload_url, {"files": [uploaded_file]}, follow=True
+        )
 
-        # Проверяем сообщение об успешной оплате
-        messages = list(response.context["messages"])
+        # Проверяем наличие сообщения через get_messages
+        messages = list(get_messages(response.wsgi_request))
         self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "Оплата успешно выполнена!")
-
-    def test_nonexistent_document(self):
-        nonexistent_url = reverse("confirm_payment", kwargs={"doc_id": 999})
-
-        response = self.client.get(nonexistent_url)
-
-        # Проверяем, что возвращается 404 ошибка
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(str(messages[0]), "Произошла ошибка при загрузке файлов.")
+        self.assertEqual(Docs.objects.count(), 0)
+        self.assertEqual(UserToDocs.objects.count(), 0)

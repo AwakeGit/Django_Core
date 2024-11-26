@@ -30,7 +30,8 @@
                         <td>{{ item.order_price|floatformat:2 }} руб.</td>
                         <td>{{ item.payment|yesno:"Оплачено,Не оплачено" }}</td>
                         <td>
-                            <form method="post" action="{% url 'remove_from_cart' item.docs.id %}">
+                            <!-- Удаление из корзины -->
+                            <form method="post" action="{% url 'cart_action' 'remove' item.docs.id %}">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
                             </form>
@@ -42,37 +43,14 @@
             <div class="text-end">
                 <h4>Итоговая сумма: {{ total_price|floatformat:2 }} руб.</h4>
             </div>
+
+            <!-- Кнопка оплаты всех документов -->
+            <form method="post" action="{% url 'cart_action' 'confirm_all' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary">Оплатить всё</button>
+            </form>
         {% else %}
             <p>Корзина пуста.</p>
         {% endif %}
-        {% if cart_items %}
-            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal"
-                    data-bs-target="#confirmPaymentModal">
-                Оплатить всё
-            </button>
-        {% endif %}
-        <div class="modal fade" id="confirmPaymentModal" tabindex="-1" aria-labelledby="confirmPaymentModalLabel"
-             aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="confirmPaymentModalLabel">Подтвердите оплату</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Вы действительно хотите оплатить все документы в корзине?</p>
-                        <p>Итоговая сумма: <strong>{{ total_price|floatformat:2 }} руб.</strong></p>
-                    </div>
-                    <div class="modal-footer">
-                        <form method="post" action="{% url 'confirm_all_payments' %}">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-success">Оплатить</button>
-                        </form>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
 {% endblock %}

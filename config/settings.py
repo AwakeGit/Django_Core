@@ -122,48 +122,42 @@ LOGIN_REDIRECT_URL = "/"
 
 
 # Логирование
+LOGS_DIR = os.path.join(BASE_DIR, "logs")
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "{asctime} {levelname} {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "file": {
-            "level": "ERROR",
+            "level": "INFO",
             "class": "logging.FileHandler",
-            "filename": BASE_DIR / "logs/django_error.log",
+            "filename": os.path.join(LOGS_DIR, "users.log"),
+            "formatter": "default",
         },
     },
     "loggers": {
-        "django": {
+        "users": {
             "handlers": ["file"],
-            "level": "ERROR",
+            "level": "INFO",
+            "propagate": True,
+        },
+        "cart": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "docs": {
+            "handlers": ["file"],
+            "level": "INFO",
             "propagate": True,
         },
     },
 }
-
-# MESSAGE_STORAGE = "django.contrib.messages.storage.fallback.FallbackStorage"
-
-# Специфические настройки для окружений
-# if ENVIRONMENT == "production":
-#     CSRF_COOKIE_SECURE = False
-#     SESSION_COOKIE_SECURE = True
-#     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in [
-#         "true",
-#         "1",
-#         "yes",
-#     ]
-#     SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))  # 1 год
-#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-#     SECURE_HSTS_PRELOAD = True
-#     SECURE_CONTENT_TYPE_NOSNIFF = True
-#
-#     ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
-#
-# elif ENVIRONMENT == "development":
-#     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-#
-# elif ENVIRONMENT == "testing":
-#     DATABASES["default"]["NAME"] = (
-#         ":memory:" if USE_SQLITE else DATABASES["default"]["NAME"] + "_test"
-#     )
-#     DEBUG = False

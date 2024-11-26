@@ -29,14 +29,14 @@
                                         <a href="{% url 'view_cart' %}" class="btn btn-primary">Перейти к оплате</a>
 
                                         <!-- Кнопка для удаления из корзины -->
-                                        <form method="post" action="{% url 'remove_from_cart' doc.id %}"
+                                        <form method="post" action="{% url 'cart_action' 'remove' doc.id %}"
                                               style="display: inline;">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-warning">Удалить из корзины</button>
                                         </form>
                                     {% else %}
                                         <!-- Кнопка для добавления в корзину -->
-                                        <form method="post" action="{% url 'add_to_cart' doc.id %}"
+                                        <form method="post" action="{% url 'cart_action' 'add' doc.id %}"
                                               style="display: inline;">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-success">Добавить в корзину</button>
