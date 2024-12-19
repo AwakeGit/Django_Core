@@ -14,6 +14,8 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key")
 DEBUG = os.getenv("DEBUG", "False").lower() in ["true", "1", "yes"]
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
 
+DRF_PROXY_URL = os.getenv("PROXY_API_BASE_URL", "http://localhost:8000")
+
 # Определение среды
 ENVIRONMENT = os.getenv("DJANGO_ENV", "development").lower()
 
@@ -30,6 +32,8 @@ INSTALLED_APPS = [
     "apps.cart.apps.CartConfig",
     "apps.docs.apps.DocsConfig",
     "apps.users.apps.UsersConfig",
+    "corsheaders",  # Что это?
+    "rest_framework",  # Что это?
 ]
 
 # Middleware
@@ -41,6 +45,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # Что это?
 ]
 
 # Настройки URL
@@ -67,6 +72,8 @@ TEMPLATES = [
 # WSGI и ASGI
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
+
+CORS_ALLOW_ALL_ORIGINS = True  # Что это?
 
 # Настройки базы данных
 USE_SQLITE = os.getenv("USE_SQLITE", "True").lower() in ["true", "1", "yes"]

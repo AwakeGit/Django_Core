@@ -12,6 +12,8 @@ python-dotenv = "^1.0.1"
 pillow = "^11.0.0"
 views = "^0.3"
 requests = "^2.32.3"
+django-cors-headers = "^4.6.0"
+django-rest-framework = "^0.1.0"
 [tool.poetry.group.dev.dependencies]
 black = "^24.10.0"
 flake8 = "^7.1.1"
