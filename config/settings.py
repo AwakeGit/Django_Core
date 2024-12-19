@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -127,6 +128,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 LOGIN_URL = "/users/login/"
 LOGIN_REDIRECT_URL = "/"
 
+if "test" in sys.argv or "test_coverage" in sys.argv:
+    USE_SQLITE = False
+else:
+    USE_SQLITE = os.getenv("USE_SQLITE", "True").lower() in ["true", "1", "yes"]
 
 # Логирование
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
