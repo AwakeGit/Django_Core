@@ -73,7 +73,7 @@ class LoginView(View):
             logger.info(f"Успешный вход для пользователя: {username}")
 
             # Запрос к DRF Proxy для получения токена
-            proxy_url = f"{settings.DRF_PROXY_URL}/api/token/"
+            proxy_url = f"{settings.DRF_PROXY_URL}/api/token/create/"
             data = {"username": username, "password": password}
             headers = {"Content-Type": "application/json"}
 
@@ -131,6 +131,28 @@ class RegisterView(View):
             AuthService.register_user(form)
             logger.info("Пользователь успешно зарегистрирован.")
             messages.success(request, "Вы успешно зарегистрировались!")
+
+            # После успешной регистрации - запрос к DRF сервису для получения токена
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+
+            proxy_url = f"{settings.DRF_PROXY_URL}/api/token/create/"
+            data = {"username": username, "password": password}
+            print(data)
+            headers = {"Content-Type": "application/json"}
+
+            response = requests.post(proxy_url, json=data, headers=headers)
+            if response.status_code == 200:
+                token = response.json().get("access")
+                # Сохранить токен в сессии или где вам нужно
+                request.session["auth_token"] = token
+                logger.info(f"Токен успешно получен для пользователя {username}.")
+            else:
+                logger.error(
+                    f"Ошибка получения токена: {response.status_code} {response.text}"
+                )
+                messages.error(request, "Не удалось получить токен. Попробуйте позже.")
+
             return redirect("main")
 
         except ServiceError as e:
