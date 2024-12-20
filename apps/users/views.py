@@ -73,11 +73,12 @@ class LoginView(View):
             logger.info(f"Успешный вход для пользователя: {username}")
 
             # Запрос к DRF Proxy для получения токена
-            proxy_url = f"{settings.DRF_PROXY_URL}/api/token/create/"
+            proxy_url = f"{settings.DRF_PROXY_URL}/api/v1/auth/token/"
             data = {"username": username, "password": password}
             headers = {"Content-Type": "application/json"}
 
             response = requests.post(proxy_url, json=data, headers=headers)
+            logger.info(response)
             if response.status_code == 200:
                 token = response.json().get("access")
                 request.session["auth_token"] = token
@@ -136,7 +137,7 @@ class RegisterView(View):
             username = form.cleaned_data.get("username")
             password = form.cleaned_data.get("password")
 
-            proxy_url = f"{settings.DRF_PROXY_URL}/api/token/create/"
+            proxy_url = f"{settings.DRF_PROXY_URL}/api/v1/auth/register/"
             data = {"username": username, "password": password}
             print(data)
             headers = {"Content-Type": "application/json"}
