@@ -20,6 +20,7 @@ class Docs(models.Model):
         default=False, help_text="Статус выполнения анализа"
     )
     text = models.TextField(null=True, blank=True, help_text="Текст из файла")
+    fastapi_id = models.PositiveIntegerField(help_text="id")
 
     def __str__(self):
         return f"Doc {self.id} ({self.user.username})"

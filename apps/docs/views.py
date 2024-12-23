@@ -67,8 +67,15 @@ class UploadPhotosView(LoginRequiredMixin, View):
         """
         logger.info("POST-запрос для загрузки файлов.")
         files = request.FILES.getlist("files")
+        auth_token = request.session.get("auth_token")
+        if not auth_token:
+            messages.error(
+                request, "Отсутствует токен авторизации. Перезайдите в систему."
+            )
+            return redirect("login")
+
         try:
-            DocService.upload_files(request.user, files)
+            DocService.upload_files(request.user, files, auth_token)
             messages.success(request, "Файлы успешно загружены.")
             return redirect("main")
         except ServiceError as e:
@@ -97,8 +104,14 @@ class AnalyzeFileView(LoginRequiredMixin, View):
         :return: Перенаправление на главную страницу
         """
         logger.info(f"POST-запрос на анализ документа {doc_id}.")
+        auth_token = request.session.get("auth_token")
+        if not auth_token:
+            messages.error(
+                request, "Отсутствует токен авторизации. Перезайдите в систему."
+            )
+            return redirect("login")
         try:
-            DocService.analyze_document(request.user, doc_id)
+            DocService.analyze_document(request.user, doc_id, auth_token)
             messages.success(request, f"Документ {doc_id} успешно проанализирован.")
         except ServiceError as e:
             logger.error(f"Ошибка при анализе документа {doc_id}: {e.message}")
@@ -121,8 +134,14 @@ class GetTextView(LoginRequiredMixin, View):
         :return: HttpResponse с текстом документа
         """
         logger.info(f"GET-запрос на получение текста документа {doc_id}.")
+        auth_token = request.session.get("auth_token")
+        if not auth_token:
+            messages.error(
+                request, "Отсутствует токен авторизации. Перезайдите в систему."
+            )
+            return redirect("login")
         try:
-            text = DocService.get_document_text(request.user, doc_id)
+            text = DocService.get_document_text(request.user, doc_id, auth_token)
             return render(request, "docs/get_text.html", {"text": text})
         except ServiceError as e:
             logger.error(f"Ошибка при получении текста документа {doc_id}: {e.message}")
@@ -148,8 +167,14 @@ class DeleteFileView(LoginRequiredMixin, View):
         :return: Перенаправление на главную страницу
         """
         logger.info(f"POST-запрос на удаление документа {doc_id}.")
+        auth_token = request.session.get("auth_token")
+        if not auth_token:
+            messages.error(
+                request, "Отсутствует токен авторизации. Перезайдите в систему."
+            )
+            return redirect("login")
         try:
-            DocService.delete_document(request.user, doc_id)
+            DocService.delete_document(request.user, doc_id, auth_token)
             messages.success(request, f"Документ {doc_id} успешно удален.")
         except ServiceError as e:
             logger.error(f"Ошибка при удалении документа {doc_id}: {e.message}")

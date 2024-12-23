@@ -79,10 +79,16 @@ class LoginView(View):
 
             response = requests.post(proxy_url, json=data, headers=headers)
             logger.info(response)
-            if response.status_code == 200:
+            if response.status_code in [200, 201]:
                 token = response.json().get("access")
-                request.session["auth_token"] = token
-                logger.info(f"Токен успешно получен для пользователя {username}.")
+                if token:
+                    request.session["auth_token"] = token
+                    logger.info(f"Токен успешно получен для пользователя {username}.")
+                else:
+                    logger.error("Не удалось получить токен из ответа сервера.")
+                    messages.error(
+                        request, "Не удалось получить токен. Попробуйте позже."
+                    )
             else:
                 logger.error(
                     f"Ошибка получения токена: {response.status_code} {response.text}"
@@ -143,11 +149,16 @@ class RegisterView(View):
             headers = {"Content-Type": "application/json"}
 
             response = requests.post(proxy_url, json=data, headers=headers)
-            if response.status_code == 200:
+            if response.status_code in [200, 201]:
                 token = response.json().get("access")
-                # Сохранить токен в сессии или где вам нужно
-                request.session["auth_token"] = token
-                logger.info(f"Токен успешно получен для пользователя {username}.")
+                if token:
+                    request.session["auth_token"] = token
+                    logger.info(f"Токен успешно получен для пользователя {username}.")
+                else:
+                    logger.error("Не удалось получить токен из ответа сервера.")
+                    messages.error(
+                        request, "Не удалось получить токен. Попробуйте позже."
+                    )
             else:
                 logger.error(
                     f"Ошибка получения токена: {response.status_code} {response.text}"
